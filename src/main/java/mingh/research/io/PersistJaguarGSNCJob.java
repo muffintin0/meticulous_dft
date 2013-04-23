@@ -23,11 +23,16 @@ public class PersistJaguarGSNCJob implements PersistJaguarJob {
 
 	@Override
 	public void persist(String jobname, JaguarResultBean jaguarResultBean) {
-		System.out.println(jobname);
+		if ( GSNCJob.findGSNCJobsByUniqueNameEquals(jobname).getResultList().size() == 1 ){
+		System.out.println("Record exists. Skip it.");
+		return;
+		}
 		
 		List<JaguarOptimizationStepBean> optimizationSteps = jaguarResultBean.getOptimizationSteps();
+		if ( optimizationSteps.size() == 0 ){
+			return; //the out file does not even start run. do not persist the job
+		}
 		JaguarOptimizationStepBean lastOptimizationStep = optimizationSteps.get(optimizationSteps.size()-1);
-		IRPropertyBean irPropertyBean = (IRPropertyBean) jaguarResultBean.getJaguarPropertyBean();
 		
 		String[] fragments = jobname.split("-");
 		int spin = Integer.parseInt(fragments[0]);
@@ -47,7 +52,9 @@ public class PersistJaguarGSNCJob implements PersistJaguarJob {
 		
 		//from the last optimization step
 		jobSummary.setEnergy(BigDecimal.valueOf(lastOptimizationStep.getTotalEnergy()).setScale(5, RoundingMode.HALF_EVEN));
+
 		jobSummary.setForce(BigDecimal.valueOf(lastOptimizationStep.getTotalForce().length()).setScale(5, RoundingMode.HALF_EVEN));
+		
 		jobSummary.setAlphaHOMO(BigDecimal.valueOf(lastOptimizationStep.getAlphaHOMO()).setScale(5, RoundingMode.HALF_EVEN));
 		jobSummary.setAlphaLUMO(BigDecimal.valueOf(lastOptimizationStep.getAlphaLUMO()).setScale(5, RoundingMode.HALF_EVEN));
 		jobSummary.setBetaHOMO(BigDecimal.valueOf(lastOptimizationStep.getBetaHOMO()).setScale(5, RoundingMode.HALF_EVEN));
@@ -64,14 +71,13 @@ public class PersistJaguarGSNCJob implements PersistJaguarJob {
 		jobSummary.setStartGeometry(StringUtils.collectionToCommaDelimitedString(optimizationSteps.get(0).getXyzs()));
 		//from the input params
 		jobSummary.setInputParams(jaguarResultBean.getJaguarInputBean().toCommaDelimitedString());
-		//set IR property
-		jobSummary.setEnthalpy(BigDecimal.valueOf(irPropertyBean.getEnthalpy()).setScale(5, RoundingMode.HALF_EVEN));
-		jobSummary.setInternalEnergy(BigDecimal.valueOf(irPropertyBean.getInternalEnergy()).setScale(5, RoundingMode.HALF_EVEN));
-		jobSummary.setGibbsEnergy(BigDecimal.valueOf(irPropertyBean.getGibbsEnergy()).setScale(5, RoundingMode.HALF_EVEN));
-		jobSummary.setZpe(BigDecimal.valueOf(irPropertyBean.getZPE()).setScale(3, RoundingMode.HALF_EVEN));
+
+		// if the ir property exists
+		if ( jaguarResultBean.getJaguarPropertyBean().getPropertyName() == "IR" ){
+			
+		}
 		
 		jobSummary.persist();
-		
 		System.out.println("Saved the final optimization result");
 		
 		//populate the optimization steps table
@@ -84,7 +90,10 @@ public class PersistJaguarGSNCJob implements PersistJaguarJob {
 			gsncJobStep.setUniqueName(jobname);
 			gsncJobStep.setStep(optimizationStepCounter);
 			BigDecimal energy = BigDecimal.valueOf(optimizationStep.getTotalEnergy()).setScale(5, RoundingMode.HALF_EVEN);
+			
+
 			BigDecimal force = BigDecimal.valueOf(optimizationStep.getTotalForce().length()).setScale(5, RoundingMode.HALF_EVEN);
+			
 			BigDecimal alphaHOMO = BigDecimal.valueOf(optimizationStep.getAlphaHOMO()).setScale(5, RoundingMode.HALF_EVEN);
 			BigDecimal alphaLUMO = BigDecimal.valueOf(optimizationStep.getAlphaLUMO()).setScale(5, RoundingMode.HALF_EVEN);
 			BigDecimal betaHOMO = BigDecimal.valueOf(optimizationStep.getBetaHOMO()).setScale(5, RoundingMode.HALF_EVEN);
@@ -141,26 +150,39 @@ public class PersistJaguarGSNCJob implements PersistJaguarJob {
 		optimizationProcess.setGeometries(geometries.substring(0, geometries.length()-1).getBytes());
 		optimizationProcess.setDetailedForces(detailedForces.substring(0, detailedForces.length()-1).getBytes());
 		optimizationProcess.persist();
-		
-		//insert the IRProperty table
-		GSNCJobIRProperty gsncJobIRProperty = new GSNCJobIRProperty();
-		gsncJobIRProperty.setUniqueName(jobname);
-		gsncJobIRProperty.setFreqNumbers(StringUtils.collectionToCommaDelimitedString(irPropertyBean.getFrequencyNumbers()));
-		gsncJobIRProperty.setIntensities(StringUtils.collectionToCommaDelimitedString(irPropertyBean.getIntensities()));
-		
-		String normModes = "";
-		for(List<Vector3d> normMode : irPropertyBean.getNormalModes()){
-			normModes += StringUtils.collectionToCommaDelimitedString(normMode);
+	
+		// if the ir property exists
+		if ( jaguarResultBean.getJaguarPropertyBean().getPropertyName() == "IR" ){
+			IRPropertyBean irPropertyBean = (IRPropertyBean) jaguarResultBean.getJaguarPropertyBean();
+			
+			//insert the IRProperty table
+			GSNCJobIRProperty gsncJobIRProperty = new GSNCJobIRProperty();
+			gsncJobIRProperty.setUniqueName(jobname);
+			gsncJobIRProperty.setFreqNumbers(StringUtils.collectionToCommaDelimitedString(irPropertyBean.getFrequencyNumbers()));
+			gsncJobIRProperty.setIntensities(StringUtils.collectionToCommaDelimitedString(irPropertyBean.getIntensities()));
+			
+			String normModes = "";
+			for(List<Vector3d> normMode : irPropertyBean.getNormalModes()){
+				normModes += StringUtils.collectionToCommaDelimitedString(normMode);
+			}
+			gsncJobIRProperty.setNormModes(normModes.substring(0, normModes.length()-1).getBytes());
+			gsncJobIRProperty.setCv( BigDecimal.valueOf(irPropertyBean.getCv()) );
+			gsncJobIRProperty.setG( BigDecimal.valueOf(irPropertyBean.getG()) );
+			gsncJobIRProperty.setH( BigDecimal.valueOf(irPropertyBean.getH()) );
+			gsncJobIRProperty.setS( BigDecimal.valueOf(irPropertyBean.getS()) );
+			gsncJobIRProperty.setT( BigDecimal.valueOf(irPropertyBean.getTemperature()) );
+			gsncJobIRProperty.setU( BigDecimal.valueOf(irPropertyBean.getU()) );
+			gsncJobIRProperty.setGsncJob(jobSummary);
+			gsncJobIRProperty.persist();
+			
+			//set IR property for job entry
+			jobSummary.setEnthalpy(BigDecimal.valueOf(irPropertyBean.getEnthalpy()).setScale(5, RoundingMode.HALF_EVEN));
+			jobSummary.setInternalEnergy(BigDecimal.valueOf(irPropertyBean.getInternalEnergy()).setScale(5, RoundingMode.HALF_EVEN));
+			jobSummary.setGibbsEnergy(BigDecimal.valueOf(irPropertyBean.getGibbsEnergy()).setScale(5, RoundingMode.HALF_EVEN));
+			jobSummary.setZpe(BigDecimal.valueOf(irPropertyBean.getZPE()).setScale(3, RoundingMode.HALF_EVEN));
+			jobSummary.merge();
 		}
-		gsncJobIRProperty.setNormModes(normModes.substring(0, normModes.length()-1).getBytes());
-		gsncJobIRProperty.setCv( BigDecimal.valueOf(irPropertyBean.getCv()) );
-		gsncJobIRProperty.setG( BigDecimal.valueOf(irPropertyBean.getG()) );
-		gsncJobIRProperty.setH( BigDecimal.valueOf(irPropertyBean.getH()) );
-		gsncJobIRProperty.setS( BigDecimal.valueOf(irPropertyBean.getS()) );
-		gsncJobIRProperty.setT( BigDecimal.valueOf(irPropertyBean.getTemperature()) );
-		gsncJobIRProperty.setU( BigDecimal.valueOf(irPropertyBean.getU()) );
-		gsncJobIRProperty.setGsncJob(jobSummary);
-		gsncJobIRProperty.persist();
+		
 		
 		//populate the files table
 		for (JaguarFileBean jaguarFile : jaguarResultBean.getJaguarFiles()){

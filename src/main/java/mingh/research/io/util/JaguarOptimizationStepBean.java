@@ -50,7 +50,7 @@ public class JaguarOptimizationStepBean {
 	
 	private List<Vector3d> forces = new ArrayList<Vector3d>();
 	
-	private Vector3d totalForce;
+	private Vector3d totalForce = new Vector3d();
 	
 	private List<Vector3d> xyzs = new ArrayList<Vector3d>();
 

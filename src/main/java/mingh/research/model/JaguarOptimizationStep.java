@@ -31,7 +31,6 @@ public abstract class JaguarOptimizationStep {
     @Digits(integer = 5, fraction = 5)
     private BigDecimal energy;
 
-    @NotNull
     @Column(name = "total_force")
     @Digits(integer = 5, fraction = 5)
     private BigDecimal force;

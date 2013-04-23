@@ -225,7 +225,12 @@ public class ReadJaguarOut {
 					counter++;
 				}
 				jaguarOptimizationStepBean.setForces(forces);
-				jaguarOptimizationStepBean.setTotalForce(forces.get(forces.size()-1));
+				if ( forces.size()>0 ){ //for SP calculation, the forces do not exits
+					jaguarOptimizationStepBean.setTotalForce(forces.get(forces.size()-1));
+				} else {
+					jaguarOptimizationStepBean.setTotalForce(new Vector3d() ); //set an empty value
+				}
+				
 			}  else if (line.contains("new geometry:") || line.contains("final geometry:")) {
 				counter+= 3; //geometry lines 
 				List<Vector3d> xyzs = new ArrayList<Vector3d>();
@@ -261,15 +266,20 @@ public class ReadJaguarOut {
 		while ( i< totalLines ){
 			if ( freqLines.get(i).contains("frequencies") ){
 				String[] numberParts = freqLines.get(i).trim().split("\\s+");
+				boolean intensityExists = true; //Jaguar 7.0 does not have intensities
 				if ( numberParts[0].equals("frequencies") ){
 					int freqNumberCounter = 1;
 					String[] intensityParts = freqLines.get(i+1).trim().split("\\s+");
+					if ( !intensityParts[0].equals("intensities")) intensityExists=false;
 					while (freqNumberCounter < numberParts.length){
 						frequencies.add(Double.parseDouble(numberParts[freqNumberCounter]));
-						intensities.add(Double.parseDouble(intensityParts[freqNumberCounter]));
+						if ( intensityExists ) {
+							intensities.add(Double.parseDouble(intensityParts[freqNumberCounter]));
+						}
 						freqNumberCounter++;
 					}
 					int j = i + 4;
+					if ( !intensityExists ) j=i+3; //Jaguar 7.0 does not have intensities
 					List<String[]> normModeMatrix = new ArrayList<String[]>();
 					while( !freqLines.get(j).trim().isEmpty() ){
 						String[] normalModeParts = freqLines.get(j).trim().split("\\s+");

@@ -46,7 +46,6 @@ public abstract class JaguarJob {
     @Digits(integer = 5, fraction = 5)
     private BigDecimal energy;
 
-    @NotNull
     @Column(name = "total_force")
     @Digits(integer = 5, fraction = 5)
     private BigDecimal force;
@@ -56,7 +55,7 @@ public abstract class JaguarJob {
     @Digits(integer = 5, fraction = 5)
     private BigDecimal alphaHOMO;
 
-    @NotNull
+	@NotNull
     @Column(name = "alpha_lumo")
     @Digits(integer = 5, fraction = 5)
     private BigDecimal alphaLUMO;

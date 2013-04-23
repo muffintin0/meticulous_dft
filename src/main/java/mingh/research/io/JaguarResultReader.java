@@ -33,8 +33,8 @@ public class JaguarResultReader {
 		ctx.load("classpath*:META-INF/spring/applicationContext*.xml");
 		ctx.refresh();
 		
-		Path startingDir = Paths.get("/media/muffintin0/Elements/Research/DOE/Bimetallic/Store/Bimetallic/13/CoCu");
-		PersistJaguarJob persistJaguarJob = new PersistJaguarGSFCJob();
+		Path startingDir = Paths.get("/media/muffintin0/Elements/Research/DOE/Bimetallic/Store/Bimetallic/13/CoCuGO");
+		PersistJaguarJob persistJaguarJob = new PersistJaguarGSNCJob();
 		
 		JaguarResultReader reader = new JaguarResultReader(startingDir, persistJaguarJob);
 		//Files.walkFileTree(startingDir, reader.new FindJavaVisitor());
@@ -66,7 +66,7 @@ public class JaguarResultReader {
 	}
 	
 	public JaguarResultReader(Path dirPath, PersistJaguarJob persistJaguarJob) throws IOException{
-		Path logFile = Paths.get("/home/muffintin0/Desktop/ResearchDataRead.log");
+		Path logFile = Paths.get(dirPath.toString()+"/ResearchDataRead.log");
 		Set<PosixFilePermission> perms =
 				PosixFilePermissions.fromString("rw-rw-rw-");
 		FileAttribute<Set<PosixFilePermission>> attr =
@@ -83,6 +83,9 @@ public class JaguarResultReader {
 		Files.walkFileTree(dirPath, visitor);	
 		this.jobFiles = visitor.getJobFiles();	
 		for ( String jobname : jobFiles.keySet()){
+			
+			System.out.println(jobname);
+			
 			JaguarResultBean resultBean = new JaguarResultBean();
 			
 			this.setJaguarFilePath(jobname, resultBean); //generate all the relative paths from the jobFiles
@@ -98,8 +101,8 @@ public class JaguarResultReader {
 				new ReadJaguarIn(inFilePath, resultBean);
 			}
 
-			System.out.println(jobname);
 			System.out.println(resultBean.toString());
+			
 			writer.write(jobname+"\n");
 			writer.write(resultBean.toString()+"\n\n");
 			persistJaguarJob.persist(jobname, resultBean); //persist the job
