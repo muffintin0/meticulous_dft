@@ -33,8 +33,8 @@ public class JaguarResultReader {
 		ctx.load("classpath*:META-INF/spring/applicationContext*.xml");
 		ctx.refresh();
 		
-		Path startingDir = Paths.get("/media/muffintin0/Elements/Research/DOE/Bimetallic/Store/Bimetallic/13/CoCuGO");
-		PersistJaguarJob persistJaguarJob = new PersistJaguarGSNCJob();
+		Path startingDir = Paths.get("/media/muffintin0/Elements/Research/DOE/Bimetallic/Store/Bimetallic/13/CoCuTSSP");
+		PersistJaguarJob persistJaguarJob = new PersistJaguarTSNCJob();
 		
 		JaguarResultReader reader = new JaguarResultReader(startingDir, persistJaguarJob);
 		//Files.walkFileTree(startingDir, reader.new FindJavaVisitor());

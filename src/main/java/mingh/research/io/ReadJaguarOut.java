@@ -71,6 +71,8 @@ public class ReadJaguarOut {
 	
 	private void collectJobResource(String line) {
 		if ( line.contains("wallclock:") ){
+			//System.out.println(line);
+			//System.out.println(outFile.toString());
 			double clockTime = Double.parseDouble(line.trim().split("\\s+")[6]); 
 			this.jaguarResultBean.addToJobRunTime(clockTime);
 		} else if ( line.contains("Peak memory usage:") ) {
